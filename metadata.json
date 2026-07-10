@@ -1,0 +1,6 @@
+{
+  "name": "MonsterAI Keyboard Simulator",
+  "description": "A highly polished, interactive simulator for Android custom keyboard layouts including QWERTY, Cheonjiin, Naratgul, and Geomjigeul, featuring autocorrection, predictive text, and smart layout customizers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
