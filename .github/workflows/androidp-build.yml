@@ -1,0 +1,55 @@
+name: Android Release Build & Sign
+
+on:
+  push:
+    branches: [ "main" ] # main 브랜치에 코드가 push될 때 자동 실행
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        cache: 'gradle'
+
+    - name: Grant Execute Permission for Gradlew
+      run: chmod +x gradlew
+
+    # Gradle 빌드를 실행하여 Release APK 생성 (서명 전 단계)
+    - name: Build Release APK
+      run: ./gradlew assembleRelease --no-daemon
+
+    # GitHub Secrets에 등록된 Base64 서명 키파일(.jks)을 디코딩하여 빌드 서버에 복원
+    - name: Decrypt Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release-key.jks
+
+    # Android Sign 라이브러리를 사용하여 APK에 서명 적용
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      id: sign_app
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+        alias: ${{ secrets.KEY_ALIAS }}
+        keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+      env:
+        BUILD_TOOLS_VERSION: "34.0.0"
+
+    # 서명이 완료된 최종 APK를 GitHub Artifacts에 업로드하여 다운로드 가능하게 함
+    - name: Upload Signed APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: MonsterAI-Keyboard-Signed-APK
+        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+        retention-days: 7
